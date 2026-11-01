@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandem.mesh/schemas/IntentRequest.json",
+  "title": "IntentRequest",
+  "description": "Standardized request envelope for dispatching intents across the Tandem L7 mesh.",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Unique UUIDv4 or deterministic identifier for correlation."
+    },
+    "target_capability": {
+      "type": "string",
+      "description": "Dot-delimited name of target capability to execute."
+    },
+    "params": {
+      "type": "object",
+      "description": "Key-value argument payload conforming to target capability schema.",
+      "additionalProperties": true
+    },
+    "caller_app_id": {
+      "type": "string",
+      "description": "Originating application or agent identifier."
+    },
+    "caller_taint": {
+      "type": "string",
+      "enum": [
+        "UNTRUSTED_EXTERNAL",
+        "QUARANTINED_DATA",
+        "INTERNAL_AGENT",
+        "PINPOINT_VERIFIED",
+        "HUMAN_VERIFIED"
+      ],
+      "default": "INTERNAL_AGENT",
+      "description": "Information-flow trust level of caller or input payload."
+    },
+    "timestamp_sec": {
+      "type": "number",
+      "description": "Unix timestamp in epoch seconds when request was formulated."
+    },
+    "ratified_by_hand": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether elevated blast-radius action was physically ratified by operator."
+    },
+    "trace_id": {
+      "type": ["string", "null"],
+      "description": "Distributed trace context ID for multi-hop workflow tracking."
+    }
+  },
+  "required": ["request_id", "target_capability", "params", "caller_app_id"],
+  "additionalProperties": false
+}

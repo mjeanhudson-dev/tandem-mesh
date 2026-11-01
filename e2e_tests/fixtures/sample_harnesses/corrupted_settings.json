@@ -1,0 +1,3 @@
+{
+  "hooks": {
+    "unclosed_json": true,

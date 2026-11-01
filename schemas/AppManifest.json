@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandem.mesh/schemas/AppManifest.json",
+  "title": "AppManifest",
+  "description": "Semantic manifest declaring an application's metadata and exposed capabilities to the Tandem mesh.",
+  "type": "object",
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "description": "Unique identifier of the application node."
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the application."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human/agent-readable summary of the application service."
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "List of discrete capabilities exposed to the mesh.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Dot-delimited capability identifier (e.g. 'cad.generate_wing_profile')."
+          },
+          "description": {
+            "type": "string",
+            "description": "Semantic explanation of what this capability performs."
+          },
+          "parameters": {
+            "type": "array",
+            "description": "Array of parameter contracts.",
+            "items": {
+              "$ref": "CapabilityParameter.json"
+            }
+          },
+          "min_taint_level": {
+            "type": "string",
+            "enum": [
+              "UNTRUSTED_EXTERNAL",
+              "QUARANTINED_DATA",
+              "INTERNAL_AGENT",
+              "PINPOINT_VERIFIED",
+              "HUMAN_VERIFIED"
+            ],
+            "default": "INTERNAL_AGENT",
+            "description": "Minimum required caller trust level."
+          },
+          "blast_radius": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 10,
+            "description": "Quantitative risk score B(a) governing required autonomy gear and detent resistance."
+          }
+        },
+        "required": ["name", "description", "blast_radius"]
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Arbitrary domain metadata (author, repo, license, etc.).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["app_id", "version", "description", "capabilities"],
+  "additionalProperties": false
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandem.mesh/schemas/IntentResponse.json",
+  "title": "IntentResponse",
+  "description": "Standardized response envelope returned by the Tandem mesh after intent execution.",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Matching request_id for client correlation."
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether capability execution completed successfully without error."
+    },
+    "data": {
+      "description": "Output payload produced by capability handler."
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Human/agent-readable error description if success is false."
+    },
+    "taint_level": {
+      "type": "string",
+      "enum": [
+        "UNTRUSTED_EXTERNAL",
+        "QUARANTINED_DATA",
+        "INTERNAL_AGENT",
+        "PINPOINT_VERIFIED",
+        "HUMAN_VERIFIED"
+      ],
+      "description": "Resulting information-flow taint level of output data."
+    },
+    "execution_time_ms": {
+      "type": "number",
+      "description": "Duration of execution in milliseconds."
+    },
+    "haptic_telemetry": {
+      "type": ["object", "null"],
+      "description": "Tactile profile and DualSense USB HID telemetry synthesized for this action.",
+      "properties": {
+        "blast_radius": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "lightbar_rgb": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "left_trigger_mode": { "type": "integer" },
+        "left_trigger_params": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+        },
+        "right_trigger_mode": { "type": "integer" },
+        "right_trigger_params": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+        },
+        "motor_rumble_left": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "motor_rumble_right": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "mobile_vibration_ms": { "type": "integer" }
+      },
+      "required": [
+        "blast_radius",
+        "lightbar_rgb",
+        "left_trigger_mode",
+        "right_trigger_mode"
+      ]
+    }
+  },
+  "required": ["request_id", "success", "taint_level", "execution_time_ms"],
+  "additionalProperties": false
+}

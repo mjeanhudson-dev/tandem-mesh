@@ -1,0 +1,492 @@
+openapi: 3.1.0
+info:
+  title: Tandem Universal A2A & A2H Coordination Mesh API
+  version: 1.0.0
+  description: >
+    Universal Layer 7 semantic orchestration mesh connecting AI agent harnesses
+    (Antigravity, Claude Code, OpenAI Codex, Hermes), local/cloud applications,
+    and physical human-in-the-loop tactile devices (Sony DualSense, mobile webhooks,
+    potentiometers, pedals). Decoupled from Layer 3/4 network overlays such as Tailscale.
+servers:
+  - url: http://localhost:8855
+    description: Local Tandem node
+  - url: http://100.64.0.15:8855
+    description: Remote Tandem node over Tailscale L3/L4 encrypted tunnel
+paths:
+  /tandem/capabilities:
+    get:
+      summary: Discover registered capabilities
+      description: Query the dynamic mesh registry catalog for available capabilities with optional domain prefix filtering.
+      operationId: listCapabilities
+      tags:
+        - Discovery
+      parameters:
+        - name: prefix
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Domain prefix filter (e.g. 'cad.', 'sim.', 'workspace.')
+      responses:
+        '200':
+          description: Catalog of matching registered applications and capabilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catalog:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/AppManifest'
+
+  /tandem/register:
+    post:
+      summary: Register application manifest
+      description: Register or update an application's capability contracts in the mesh registry.
+      operationId: registerApp
+      tags:
+        - Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppManifest'
+      responses:
+        '200':
+          description: Application and its capabilities successfully registered in mesh.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: registered
+                  app_id:
+                    type: string
+                  registered_capabilities:
+                    type: array
+                    items:
+                      type: string
+
+  /tandem/intent:
+    post:
+      summary: Dispatch an intent across the mesh
+      description: Dispatches a typed intent to a target capability through the 7-stage atomic pipeline enforcing taint lattice, blast radius gating, and haptic feedback.
+      operationId: dispatchIntent
+      tags:
+        - Dispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentRequest'
+      responses:
+        '200':
+          description: Intent execution result and synthesized haptic telemetry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentResponse'
+        '400':
+          description: Schema validation failure or unknown capability.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Taint attenuation violation or unratified blast-radius detent requirement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: E-Brake active or service unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tandem/hand/bind:
+    post:
+      summary: Bind physical hand controller
+      description: Binds a physical controller (DualSense, mobile button, foot pedal) to the mesh with an autonomy gear setting.
+      operationId: bindHandDevice
+      tags:
+        - App-to-Hand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandDeviceBinding'
+      responses:
+        '200':
+          description: Hand device successfully bound to mesh.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: bound
+                  device_id:
+                    type: string
+                  active_gear:
+                    type: integer
+                  blast_ceiling:
+                    type: integer
+
+  /tandem/hand/ratify:
+    post:
+      summary: Submit physical detent ratification
+      description: Evaluates physical trigger counts or hardware switch activation to ratify elevated blast-radius actions.
+      operationId: submitRatification
+      tags:
+        - App-to-Hand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatificationRequest'
+      responses:
+        '200':
+          description: Ratification evaluation result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ratified:
+                    type: boolean
+                  device_id:
+                    type: string
+                  is_driving_latched:
+                    type: boolean
+                  timestamp_sec:
+                    type: number
+
+  /tandem/ebrake:
+    post:
+      summary: Engage emergency E-Brake halt
+      description: Broadcasts an immediate atomic halt across all connected applications, transports, and agent harnesses (G0_EBRAKE_STOP).
+      operationId: engageEBrake
+      tags:
+        - Lifecycle
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  default: manual_api
+      responses:
+        '200':
+          description: Mesh-wide emergency E-Brake engaged. All dispatches halted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ebrake_engaged
+                  active:
+                    type: boolean
+                    example: true
+
+  /tandem/release_ebrake:
+    post:
+      summary: Release emergency E-Brake halt
+      description: Releases emergency halt, restoring mesh operation to G2_SPORT_TACTILE without restarting processes.
+      operationId: releaseEBrake
+      tags:
+        - Lifecycle
+      responses:
+        '200':
+          description: Mesh-wide emergency E-Brake released. Normal operation restored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ebrake_released
+                  active:
+                    type: boolean
+                    example: false
+
+  /tandem/events:
+    get:
+      summary: Subscribe to mesh event stream (SSE / WebSocket)
+      description: Real-time telemetry stream carrying capability dispatch events, haptic state updates, and E-Brake transitions.
+      operationId: streamMeshEvents
+      tags:
+        - Telemetry
+      responses:
+        '200':
+          description: Server-sent event stream of mesh telemetry.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+components:
+  schemas:
+    CapabilityParameter:
+      type: object
+      description: Parameter schema definition for a capability.
+      properties:
+        name:
+          type: string
+        type_name:
+          type: string
+          enum: [string, int, float, bool, dict, list, any]
+        description:
+          type: string
+        required:
+          type: boolean
+          default: true
+        default: {}
+      required:
+        - name
+        - type_name
+        - description
+
+    Capability:
+      type: object
+      description: Discrete capability exposed by an application.
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapabilityParameter'
+        min_taint_level:
+          type: string
+          enum:
+            - UNTRUSTED_EXTERNAL
+            - QUARANTINED_DATA
+            - INTERNAL_AGENT
+            - PINPOINT_VERIFIED
+            - HUMAN_VERIFIED
+          default: INTERNAL_AGENT
+        blast_radius:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 10
+      required:
+        - name
+        - description
+        - blast_radius
+
+    AppManifest:
+      type: object
+      description: Application manifest declaring capabilities and metadata.
+      properties:
+        app_id:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Capability'
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - app_id
+        - version
+        - description
+        - capabilities
+
+    IntentRequest:
+      type: object
+      description: Dispatch envelope for sending an intent across the mesh.
+      properties:
+        request_id:
+          type: string
+        target_capability:
+          type: string
+        params:
+          type: object
+          additionalProperties: true
+        caller_app_id:
+          type: string
+        caller_taint:
+          type: string
+          enum:
+            - UNTRUSTED_EXTERNAL
+            - QUARANTINED_DATA
+            - INTERNAL_AGENT
+            - PINPOINT_VERIFIED
+            - HUMAN_VERIFIED
+          default: INTERNAL_AGENT
+        timestamp_sec:
+          type: number
+        ratified_by_hand:
+          type: boolean
+          default: false
+        trace_id:
+          type:
+            - string
+            - 'null'
+      required:
+        - request_id
+        - target_capability
+        - params
+        - caller_app_id
+
+    IntentResponse:
+      type: object
+      description: Execution response envelope with output data and haptic telemetry.
+      properties:
+        request_id:
+          type: string
+        success:
+          type: boolean
+        data: {}
+        error:
+          type:
+            - string
+            - 'null'
+        taint_level:
+          type: string
+          enum:
+            - UNTRUSTED_EXTERNAL
+            - QUARANTINED_DATA
+            - INTERNAL_AGENT
+            - PINPOINT_VERIFIED
+            - HUMAN_VERIFIED
+        execution_time_ms:
+          type: number
+        haptic_telemetry:
+          type:
+            - object
+            - 'null'
+          $ref: '#/components/schemas/HapticProfile'
+      required:
+        - request_id
+        - success
+        - taint_level
+        - execution_time_ms
+
+    HapticProfile:
+      type: object
+      description: Synthesized physical detent resistance, lightbar RGB, and rumble telemetry.
+      properties:
+        blast_radius:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lightbar_rgb:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+          minItems: 3
+          maxItems: 3
+        left_trigger_mode:
+          type: integer
+          description: DualSense left trigger mode (e.g. 0x00 Smooth, 0x26 Judder).
+        left_trigger_params:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+        right_trigger_mode:
+          type: integer
+          description: DualSense right trigger mode (e.g. 0x00 Smooth, 0x05 Spring Detent, 0x21 Static Stop).
+        right_trigger_params:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+        motor_rumble_left:
+          type: integer
+          minimum: 0
+          maximum: 255
+        motor_rumble_right:
+          type: integer
+          minimum: 0
+          maximum: 255
+        mobile_vibration_ms:
+          type: integer
+      required:
+        - blast_radius
+        - lightbar_rgb
+        - left_trigger_mode
+        - right_trigger_mode
+
+    HandDeviceBinding:
+      type: object
+      description: Payload for registering a physical hand device with the mesh.
+      properties:
+        device_id:
+          type: string
+        device_type:
+          type: string
+          enum: [dualsense, mobile_button, slider, foot_pedal, keyboard]
+        active_gear:
+          type: integer
+          minimum: 0
+          maximum: 4
+          default: 2
+      required:
+        - device_id
+        - device_type
+
+    RatificationRequest:
+      type: object
+      description: Payload for operator detent squeeze evaluation.
+      properties:
+        device_id:
+          type: string
+        trigger_counts:
+          type: integer
+          minimum: 0
+          maximum: 255
+        is_menu:
+          type: boolean
+          default: false
+        game_rumble:
+          type: integer
+          minimum: 0
+          maximum: 255
+          default: 0
+      required:
+        - device_id
+        - trigger_counts
+
+    ErrorResponse:
+      type: object
+      description: Structured error envelope.
+      properties:
+        error:
+          type: string
+        error_type:
+          type: string
+        haptic_profile:
+          $ref: '#/components/schemas/HapticProfile'
+      required:
+        - error
+        - error_type

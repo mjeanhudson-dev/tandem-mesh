@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tandem.mesh/schemas/CapabilityParameter.json",
+  "title": "CapabilityParameter",
+  "description": "Schema definition for a typed capability argument contract within the Tandem A2A mesh.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Identifier for the parameter."
+    },
+    "type_name": {
+      "type": "string",
+      "enum": ["string", "int", "float", "bool", "dict", "list", "any"],
+      "description": "Data type name enforced at runtime boundary."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human/agent-readable explanation of the parameter purpose."
+    },
+    "required": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the caller must provide this parameter."
+    },
+    "default": {
+      "description": "Default value applied if parameter is optional and omitted."
+    }
+  },
+  "required": ["name", "type_name", "description"],
+  "additionalProperties": false
+}

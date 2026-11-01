@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tandem-mesh"
+version = "0.1.0"
+description = "Universal App-to-App (A2A) & App-to-Hand (A2H) Orchestration Mesh for Agent Harnesses & Tactile Devices"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    {name = "Antigravity Engineering"}
+]
+keywords = [
+    "agent-harness",
+    "app-to-app",
+    "app-to-hand",
+    "haptics",
+    "dualsense",
+    "tailscale-layer7",
+    "mcp",
+    "orchestration",
+    "deep-module"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Scientific/Engineering :: Human Machine Interfaces",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.15",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+tandem = "tandem.client:main"
+
+[tool.setuptools.packages.find]
+include = ["tandem*"]
+exclude = ["tests*", "skill*", "examples*"]
